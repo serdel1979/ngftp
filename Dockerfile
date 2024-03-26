@@ -11,14 +11,15 @@ COPY . .
 RUN npm run build --prod
 
 # Etapa de producción
-FROM nginx:latest
+FROM nginx:1.17.1-alpine
 
 # Copiar la configuración personalizada de Nginx
 COPY nginx.conf /etc/nginx/nginx.conf
 
-COPY --from=build-stage /app/dist/ /usr/share/nginx/html
+COPY --from=build-stage /app/dist/ftp/ /usr/share/nginx/html
 
-EXPOSE 80
+
+EXPOSE 8000
 
 CMD ["nginx", "-g", "daemon off;"]
 
