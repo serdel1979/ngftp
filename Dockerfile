@@ -1,20 +1,27 @@
-FROM alpine:latest
-MAINTAINER Adrian Dvergsdal [atmoz.net]
+FROM node:latest as build-stage
 
-# Steps done in one RUN layer:
-# - Install packages
-# - OpenSSH needs /var/run/sshd to run
-# - Remove generic host keys, entrypoint generates unique keys
-RUN echo "@community http://dl-cdn.alpinelinux.org/alpine/edge/community" >> /etc/apk/repositories && \
-    apk add --no-cache bash shadow@community openssh-server-pam openssh-sftp-server && \
-    ln -s /usr/sbin/sshd.pam /usr/sbin/sshd && \
-    mkdir -p /var/run/sshd && \
-    rm -f /etc/ssh/ssh_host_*key*
+# Instalar vsftpd y nginx
+RUN apt-get update && \
+    apt-get install -y vsftpd nginx
 
-COPY files/sshd_config /etc/ssh/sshd_config
-COPY files/create-sftp-user /usr/local/bin/
-COPY files/entrypoint /
+RUN apt-get update
+RUN apt-get install nano
 
-EXPOSE 22
+# Configurar vsftpd
+RUN mkdir /ftp
+RUN useradd -d /ftp usuario
+RUN echo "usuario:usuario" | chpasswd
+RUN chown usuario:usuario /ftp
 
-ENTRYPOINT ["/entrypoint"]
+# Copiar archivos de la aplicación y configuración de vsftpd y nginx
+COPY vsftpd.conf /etc/vsftpd.conf
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copiar archivos compilados de la aplicación
+COPY dist/ftp /usr/share/nginx/html
+
+# Exponer puertos
+EXPOSE 80 21
+
+# CMD
+CMD service vsftpd start && nginx -g 'daemon off;'
