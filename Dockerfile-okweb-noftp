@@ -1,0 +1,28 @@
+# Etapa de compilación para Angular
+FROM node:latest as build-stage
+
+# Instalar vsftpd y nginx
+RUN apt-get update && \
+    apt-get install -y vsftpd nginx
+
+# Instalar nano (opcional, si lo necesitas)
+RUN apt-get install -y nano
+
+# Configurar vsftpd
+RUN mkdir /ftp
+RUN useradd -d /ftp usuario
+RUN echo "usuario:usuario" | chpasswd
+RUN chown usuario:usuario /ftp
+
+# Copiar archivos de la aplicación y configuraciones
+COPY vsftpd.conf /etc/vsftpd.conf
+COPY nginx.conf /etc/nginx/nginx.conf
+
+# Copiar archivos compilados de la aplicación Angular
+COPY dist/ftp /usr/share/nginx/html
+
+# Exponer puertos
+EXPOSE 80 21
+
+# Iniciar servicios
+CMD service vsftpd start && nginx -g 'daemon off;'
